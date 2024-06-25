@@ -32,8 +32,8 @@ def handle_text(update: Update, context: CallbackContext, bot_instance):
             bot_instance.get_gpt_response(message, chat_id, user_id, name, context)
 
 
-def handle_voice(update: Update, context: CallbackContext):
-    voice_handler.transcribe_voice(update, context)
+def handle_voice_or_video(update: Update, context: CallbackContext):
+    voice_handler.transcribe_voice_or_video(update, context)
 
 def main():
     defaults = Defaults(timeout=240)
@@ -41,7 +41,7 @@ def main():
     dp = updater.dispatcher
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, lambda update, context: handle_text(update, context, bot)))  # Use Filters.text
-    dp.add_handler(MessageHandler(Filters.voice, handle_voice))  # Обработчик голосовых сообщений
+    dp.add_handler(MessageHandler(Filters.voice | Filters.video_note, handle_voice_or_video))
 
     # Start the Bot
     updater.start_polling()
