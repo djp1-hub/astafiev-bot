@@ -1,0 +1,56 @@
+name: Deploy Bot Script
+
+on:
+  push:
+    branches:
+      - master  # или ветка, которую вы используете
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Update local repo
+      run: |
+        /home/gennady/update_bot.sh
+
+    - name: Install Python
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3.9
+        sudo apt-get install -y python3-pip
+        sudo apt-get install -y python3-venv
+
+    - name: Create virtual environment
+      run: |
+        python3 -m venv /scripts/venv
+    - name: Install dependencies
+      run: |
+        source /scripts/venv/bin/activate
+        python3 -m pip install --upgrade pip
+        pip install -r /scripts/astafiev-bot/requirements.txt
+
+    - name: Run unit tests
+      run: |
+        source /scripts/venv/bin/activate
+        python3 -m unittest discover -s /scripts/astafiev-bot/tests
+
+    - name: Stop bot service
+      run: |
+        if systemctl is-active --quiet bot; then
+          sudo systemctl stop bot
+        else
+          echo "Service is not running."
+        fi
+
+    - name: Start bot service
+      run: |
+        sudo systemctl start bot
+
+    - name: Check service status
+      run: |
+        sudo systemctl status bot
+
