@@ -2,7 +2,8 @@ from collections import defaultdict, deque
 import matplotlib
 import openai
 from config import OPENAI_API_KEY
-import re
+import mistune
+
 
 openai.api_key = OPENAI_API_KEY
 
@@ -23,64 +24,34 @@ class ChatBot:
                 .replace("'", "&#39;")
                 .replace('"', "&quot;"))
 
+    def filter_html(self, html):
+        """
+        Filter the HTML to make sure it's compatible with Telegram.
+        - Remove or replace unsupported tags.
+        """
+        # Create a list of allowed tags
+        allowed_tags = ['b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del',
+                        'code', 'pre', 'a', 'tg-spoiler']
+
+        # Parse HTML
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, 'html.parser')
+
+        # Remove unsupported tags
+        for tag in soup.find_all():
+            if tag.name not in allowed_tags:
+                tag.unwrap()
+
+        return str(soup)
+
     def format_combined(self, text):
         """
-        Format text for Telegram HTML, handling code blocks and LaTeX-like math expressions.
-        - Code blocks enclosed in triple backticks are formatted within <pre> and <code> tags.
-        - Math expressions enclosed in \[ and \] are formatted within <pre> tags.
-        This version escapes HTML special characters to ensure the output is safe for HTML rendering.
+        Format text for Telegram HTML using mistune to convert Markdown to HTML.
         """
-        parts = []
-        in_code_block = False
-        in_math_block = False
-        buffer = ""
-        i = 0
-
-        while i < len(text):
-            if not in_code_block and not in_math_block:
-                if text[i:i + 3] == "```":
-                    if in_code_block:
-                        parts.append(f"<pre><code>{self.escape_html(buffer.strip())}</code></pre>")
-                        buffer = ""
-                        in_code_block = False
-                    else:
-                        if buffer:
-                            parts.append(self.escape_html(buffer.strip()) + " ")
-                            buffer = ""
-                        in_code_block = True
-                    i += 2
-                elif text[i:i + 2] == "\\[":
-                    if in_math_block:
-                        parts.append(f"<pre>{self.escape_html(buffer.strip())}</pre>")
-                        buffer = ""
-                        in_math_block = False
-                    else:
-                        if buffer:
-                            parts.append(self.escape_html(buffer.strip()) + " ")
-                            buffer = ""
-                        in_math_block = True
-                    i += 1
-                else:
-                    buffer += text[i]
-            else:
-                if (in_code_block and text[i:i + 3] == "```") or (in_math_block and text[i:i + 2] == "\\]"):
-                    if in_code_block:
-                        parts.append(f"<pre><code>{self.escape_html(buffer.strip())}</code></pre>")
-                        in_code_block = False
-                    if in_math_block:
-                        parts.append(f"<pre>{self.escape_html(buffer.strip())}</pre>")
-                        in_math_block = False
-                    buffer = ""
-                    i += 2 if in_math_block else 3
-                else:
-                    buffer += text[i]
-            i += 1
-
-        # Flush the remaining buffer
-        if buffer:
-            parts.append(self.escape_html(buffer.strip()))
-
-        return ''.join(parts)
+        markdown = mistune.create_markdown()
+        html = markdown(text)
+        filtered_html = self.filter_html(html)
+        return filtered_html
 
     def get_gpt_response(self, input_text, chat_id, user_id, name, context):
         # Отправляем запрос на GPT-3 API
