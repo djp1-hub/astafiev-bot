@@ -52,6 +52,6 @@ class ImageHandler:
 
         try:
             image_data = self.generate_image(prompt)
-            update.message.reply_photo(photo=image_data)
+            update.message.reply_photo(photo=image_data, caption=prompt)
         except Exception as e:
             update.message.reply_text(f"Error generating image: {str(e)}")
