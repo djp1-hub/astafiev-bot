@@ -2,8 +2,8 @@ import openai
 from config import OPENAI_API_KEY
 from telegram import Update
 from telegram.ext import CallbackContext
-from pydub import AudioSegment
 import io
+from pydub import AudioSegment
 
 openai.api_key = OPENAI_API_KEY
 
@@ -12,28 +12,26 @@ class VoiceHandler:
         self.api_key = OPENAI_API_KEY
 
     def transcribe_voice_or_video(self, update: Update, context: CallbackContext):
-        # Определение типа сообщения
+        file_byte_array = None
+        file_format = None
+
         if update.message.voice:
-            file = update.message.voice.get_file()
+            voice_file = update.message.voice.get_file()
+            file_byte_array = voice_file.download_as_bytearray()
+            file_format = "ogg"
         elif update.message.video_note:
-            file = update.message.video_note.get_file()
-        else:
-            update.message.reply_text("Не удалось обработать сообщение.")
-            return
+            video_file = update.message.video_note.get_file()
+            file_byte_array = video_file.download_as_bytearray()
+            file_format = "mp4"
 
-        file_byte_array = file.download_as_bytearray()
+        if file_byte_array:
+            input_audio = io.BytesIO(file_byte_array)
+            input_audio.name = f"input.{file_format}"  # Whisper требует имени файла
 
-        # Преобразование ogg в wav в памяти
-        ogg_audio = AudioSegment.from_ogg(io.BytesIO(file_byte_array))
-        wav_io = io.BytesIO()
-        ogg_audio.export(wav_io, format="wav")
-        wav_io.seek(0)
+            # Transcribe audio or video
+            transcript = openai.Audio.transcribe("whisper-1", input_audio)
 
-        # Установка имени файла для BytesIO
-        wav_io.name = "voice_message.wav"
+            # Send transcript to user
+            update.message.reply_text(transcript["text"])
 
-        # Чтение файла в бинарном режиме
-        transcript = openai.Audio.transcribe("whisper-1", wav_io)
 
-        # Отправка текста пользователю
-        update.message.reply_text(transcript["text"])
