@@ -31,7 +31,7 @@ class ImageHandler:
             "width": 768,
             "height": 1024,
             "override_settings": {
-                "sd_model_checkpoint": "icbinpICantBelieveIts_newYear",
+                "sd_model_checkpoint": "sdXL_v10VAEFix",
 
             }
         }
