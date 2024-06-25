@@ -2,13 +2,18 @@ import requests
 import base64
 import io
 import re
-
 import requests
 from PIL import Image
 from telegram import Update
 from telegram.ext import CallbackContext
-
 from config import STABLE_DIFFUSION_API_URL
+from src.describe_handler import ImageDescriptionHandler
+
+
+
+image_description_handler = ImageDescriptionHandler()
+
+
 
 
 class ImageHandler:
@@ -50,8 +55,10 @@ class ImageHandler:
         prompt = update.message.text
         prompt = re.sub(r"\bdraw \b", "", prompt.lower())
 
+
         try:
             image_data = self.generate_image(prompt)
-            update.message.reply_photo(photo=image_data, caption=prompt)
+            caption = image_description_handler.get_image_description(image_data)
+            update.message.reply_photo(photo=image_data, caption=caption)
         except Exception as e:
             update.message.reply_text(f"Error generating image: {str(e)}")
