@@ -4,10 +4,12 @@ from telegram import Update
 from telegram.ext import CallbackContext, Defaults, Updater, CommandHandler, MessageHandler, Filters
 from config import TOKEN
 from src.weather import WeatherBot
+from src.voice_handler import VoiceHandler
 
 # Создаем экземпляр класса ChatBot
 bot = ChatBot()
 weather_bot = WeatherBot()
+voice_handler = VoiceHandler()
 
 
 def start(update: Update, context: CallbackContext):
@@ -29,12 +31,17 @@ def handle_text(update: Update, context: CallbackContext, bot_instance):
             message = re.sub(r"\bпоясни \b", "", message.lower())
             bot_instance.get_gpt_response(message, chat_id, user_id, name, context)
 
+
+def handle_voice(update: Update, context: CallbackContext):
+    voice_handler.transcribe_voice(update, context)
+
 def main():
     defaults = Defaults(timeout=240)
     updater = Updater(TOKEN, use_context=True, defaults=defaults)  # use_context is important in version 13
     dp = updater.dispatcher
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, lambda update, context: handle_text(update, context, bot)))  # Use Filters.text
+    dp.add_handler(MessageHandler(Filters.voice, handle_voice))  # Обработчик голосовых сообщений
 
     # Start the Bot
     updater.start_polling()
