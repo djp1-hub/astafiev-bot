@@ -27,8 +27,8 @@ def handle_text(update: Update, context: CallbackContext, bot_instance):
         weather_bot.weather(update, context)
     else:
         bot_instance.previous_messages[chat_id].append({"role": "user", "content": message})
-        if "поясни" in message.lower():
-            message = re.sub(r"\bпоясни \b", "", message.lower())
+        if "астафьев" in message.lower():
+            message = re.sub(r"\bастафьев \b", "", message.lower())
             bot_instance.get_gpt_response(message, chat_id, user_id, name, context)
         elif "draw" in message.lower():
             image_handler.handle_image_request(update, context)
